@@ -1,4 +1,4 @@
-winsvctool
+winsvcwrap
 ==========
 
 This is an open source replacement for `SRVANY.EXE`.
@@ -24,31 +24,31 @@ Windows stores service configuration information in `HKLM\SYSTEM\CurrentControlS
   - `Parameters\AppEnvironment`: Multi-String. Optional. Environment variables to pass to the actual service executable.
   - `Parameters\AppDirectory`: String. Optional. Working directory to run actual service executable under.
 
-Description of winsvctool
+Description of winsvcwrap
 -------------------------
 
-winsvctool is a simple Go daemon which can be hosted as a Windows service and
+winsvcwrap is a simple Go daemon which can be hosted as a Windows service and
 which spawns and supervises one other process. It uses
 [hlandau/service](https://github.com/hlandau/service) and inherits its Windows
 service support from there.
 
-    winsvctool -service.*=...
+    winsvcwrap -service.*=...
 
 For simplicity, arguments are taken from the service command line rather than
 separate registry keys as in the `SRVANY` case. The following command line
 arguments are supported:
 
-    winsvctool
-      -winsvctool.run=...            Windows commandline to spawn (quote both EXE and arguments).
-      -winsvctool.arg=...            Add an argument to the command to spawn. May be specified multiple times.
-      -winsvctool.cwd=...            Set current working directory to this before spawning (optional).
+    winsvcwrap
+      -winsvcwrap.run=...            Windows commandline to spawn (quote both EXE and arguments).
+      -winsvcwrap.arg=...            Add an argument to the command to spawn. May be specified multiple times.
+      -winsvcwrap.cwd=...            Set current working directory to this before spawning (optional).
 
-winsvctool will propagate failures. That is, if the spawned process fails for
-any reason, winsvctool will also fail and exit so that the Windows service
+winsvcwrap will propagate failures. That is, if the spawned process fails for
+any reason, winsvcwrap will also fail and exit so that the Windows service
 management system can detect this failure, log it, and restart the entire
-hierarchy, winsvctool and all.
+hierarchy, winsvcwrap and all.
 
-winsvctool generates log output using xlog, so you can logs its (small number
+winsvcwrap generates log output using xlog, so you can logs its (small number
 of) log messages using any method supported by xlog. This is separate from the
 logging of the daemon it supervises.
 

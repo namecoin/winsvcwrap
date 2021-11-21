@@ -1,4 +1,4 @@
-// winsvctool is an adapter utility for running arbitrary daemons as Windows services.
+// winsvcwrap is an adapter utility for running arbitrary daemons as Windows services.
 package main
 
 import (
@@ -10,7 +10,7 @@ import (
 	"os/exec"
 )
 
-var log, Log = xlog.New("winsvctool")
+var log, Log = xlog.New("winsvcwrap")
 
 // Configuration for the daemon.
 type Config struct {
@@ -56,7 +56,7 @@ func (sup *Supervisor) Start() error {
 	sup.cmd.Dir = sup.cfg.CWD
 	err := sup.cmd.Start()
 	if err != nil {
-		log.Criticale(err, "could not start service to be supervised by winsvctool")
+		log.Criticale(err, "could not start service to be supervised by winsvcwrap")
 		return err
 	}
 
@@ -76,9 +76,9 @@ func (sup *Supervisor) ctlLoop() {
 				pendingStopReq <- ev.Error
 			} else {
 				if ev.Error != nil {
-					log.Criticale(ev.Error, "service supervised by winsvctool exited unexpectedly with error")
+					log.Criticale(ev.Error, "service supervised by winsvcwrap exited unexpectedly with error")
 				} else {
-					log.Critical("service supervised by winsvctool exited unexpectedly without error")
+					log.Critical("service supervised by winsvcwrap exited unexpectedly without error")
 				}
 				// This should not happen, so just exit with error so the Windows service
 				// manager will restart us.
@@ -117,13 +117,13 @@ func (sup *Supervisor) Stop() error {
 func main() {
 	cfg := &Config{}
 	config := easyconfig.Configurator{
-		ProgramName: "winsvctool",
+		ProgramName: "winsvcwrap",
 	}
 	config.ParseFatal(cfg)
 	dexlogconfig.Init()
 
 	service.Main(&service.Info{
-		Name:          "winsvctool",
+		Name:          "winsvcwrap",
 		Description:   "Windows service hosting adapter",
 		DefaultChroot: service.EmptyChrootPath,
 		NewFunc: func() (service.Runnable, error) {
