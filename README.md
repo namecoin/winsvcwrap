@@ -39,9 +39,13 @@ separate registry keys as in the `SRVANY` case. The following command line
 arguments are supported:
 
     winsvcwrap
-      -winsvcwrap.run=...            Windows commandline to spawn (quote both EXE and arguments).
-      -winsvcwrap.arg=...            Add an argument to the command to spawn. May be specified multiple times.
-      -winsvcwrap.cwd=...            Set current working directory to this before spawning (optional).
+      -winsvcwrap.run=...             Windows commandline to spawn (quote both EXE and arguments).
+      -winsvcwrap.arg=...             Add an argument to the command to spawn. May be specified multiple times.
+      -winsvcwrap.cwd=...             Set current working directory to this before spawning (optional).
+      -winsvcwrap.capturestdout=1     If set, stdout from the supervised process is captured and each line is
+                                        sent to xlog.
+      -winsvcwrap.capturestderr=1     If set, stderr from the supervised process is captured and each line is
+                                        sent to xlog.
 
 winsvcwrap will propagate failures. That is, if the spawned process fails for
 any reason, winsvcwrap will also fail and exit so that the Windows service

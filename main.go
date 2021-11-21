@@ -2,21 +2,30 @@
 package main
 
 import (
+	"bytes"
 	"github.com/hlandau/dexlogconfig"
 	"github.com/hlandau/xlog"
 	"gopkg.in/hlandau/easyconfig.v1"
 	"gopkg.in/hlandau/service.v2"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
+	"sync"
 )
 
 var log, Log = xlog.New("winsvcwrap")
 
+var logStdOut, LogStdOut = xlog.NewUnder("stdout", Log)
+var logStdErr, LogStdErr = xlog.NewUnder("stderr", Log)
+
 // Configuration for the daemon.
 type Config struct {
-	Run string   `usage:"Path to service executable to spawn" default:""`
-	Arg []string `usage:"Argument to pass to service executable (specify multiple times)" default:""`
-	CWD string   `usage:"Working directory to use for spawned service" default:""`
+	Run           string   `usage:"Path to service executable to spawn" default:""`
+	Arg           []string `usage:"Argument to pass to service executable (specify multiple times)" default:""`
+	CWD           string   `usage:"Working directory to use for spawned service" default:""`
+	CaptureStdOut bool     `usage:"Capture stdout of supervised process and send to xlog?" default:""`
+	CaptureStdErr bool     `usage:"Capture stderr of supervised process and send to xlog?" default:""`
 }
 
 type ctlEventType int
@@ -34,9 +43,12 @@ type ctlEvent struct {
 
 // Main object for this daemon.
 type Supervisor struct {
-	cfg     Config
-	cmd     *exec.Cmd
-	ctlChan chan ctlEvent
+	cfg            Config
+	cmd            *exec.Cmd
+	ctlChan        chan ctlEvent
+	logWriterOut   *logWriter
+	logWriterErr   *logWriter
+	logWriterMutex sync.Mutex
 }
 
 func New(cfg *Config) (*Supervisor, error) {
@@ -54,6 +66,17 @@ func (sup *Supervisor) Start() error {
 
 	sup.cmd = exec.Command(sup.cfg.Run, sup.cfg.Arg...)
 	sup.cmd.Dir = sup.cfg.CWD
+	if sup.cfg.CaptureStdOut {
+		logStdOut.Debugf("stdout capture is enabled")
+		sup.logWriterOut = newLogWriter(sup, logStdOut)
+		sup.cmd.Stdout = sup.logWriterOut
+	}
+	if sup.cfg.CaptureStdErr {
+		logStdOut.Debugf("stderr capture is enabled")
+		sup.logWriterErr = newLogWriter(sup, logStdErr)
+		sup.cmd.Stderr = sup.logWriterErr
+	}
+
 	err := sup.cmd.Start()
 	if err != nil {
 		log.Criticale(err, "could not start service to be supervised by winsvcwrap")
@@ -99,6 +122,13 @@ func (sup *Supervisor) ctlLoop() {
 func (sup *Supervisor) waitTerm() {
 	err := sup.cmd.Wait()
 	sup.ctlChan <- ctlEvent{Type: ctlTerminated, Error: err}
+
+	if sup.logWriterOut != nil {
+		sup.logWriterOut.Flush()
+	}
+	if sup.logWriterErr != nil {
+		sup.logWriterErr.Flush()
+	}
 }
 
 func (sup *Supervisor) Stop() error {
@@ -112,6 +142,50 @@ func (sup *Supervisor) Stop() error {
 		log.Notice("request to stop supervised process completed")
 	}
 	return nil
+}
+
+type logWriter struct {
+	sup    *Supervisor
+	Logger xlog.Logger
+	buf    *bytes.Buffer
+}
+
+func newLogWriter(sup *Supervisor, logger xlog.Logger) *logWriter {
+	lw := &logWriter{
+		sup:    sup,
+		Logger: logger,
+		buf:    bytes.NewBuffer(nil),
+	}
+	return lw
+}
+
+func (lw *logWriter) Write(b []byte) (int, error) {
+	lw.sup.logWriterMutex.Lock()
+	defer lw.sup.logWriterMutex.Unlock()
+
+	lw.buf.Write(b) // err is always nil for Buffer.Write
+	for {
+		L, err := lw.buf.ReadString('\n')
+		if err == io.EOF {
+			break
+		}
+
+		lw.Logger.Info(strings.TrimRight(L, "\r\n"))
+	}
+
+	return len(b), nil
+}
+
+func (lw *logWriter) Flush() {
+	lw.sup.logWriterMutex.Lock()
+	defer lw.sup.logWriterMutex.Unlock()
+
+	// All strings ending in newlines will already have been processed, so
+	// process any residual bytes.
+	b := lw.buf.Bytes()
+	if len(b) > 0 {
+		lw.Logger.Info(string(b))
+	}
 }
 
 func main() {
