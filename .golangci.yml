@@ -1,0 +1,9 @@
+linters-settings:
+  goimports:
+    local-prefixes: "github.com/hlandau"
+  gomoddirectives:
+    replace-local: true
+    replace-allow-list:
+      - "github.com/coreos/go-systemd"
+  varnamelen:
+    ignore-type-assert-ok: true
