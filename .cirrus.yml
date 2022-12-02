@@ -26,7 +26,6 @@ task:
       fetch_script:
         - cd $(go env GOPATH)/src/github.com/"$CIRRUS_REPO_FULL_NAME"
         - go mod init github.com/"$CIRRUS_REPO_FULL_NAME"
-        - go mod edit -replace github.com/coreos/go-systemd=github.com/coreos/go-systemd/v22@latest
         - go mod tidy
   lint_script:
     - cd $(go env GOPATH)/src/github.com/$CIRRUS_REPO_FULL_NAME/
@@ -96,7 +95,6 @@ task:
       fetch_script:
         - cd $(go env GOPATH)/src/github.com/"$CIRRUS_REPO_FULL_NAME"
         - go mod init github.com/"$CIRRUS_REPO_FULL_NAME"
-        - go mod edit -replace github.com/coreos/go-systemd=github.com/coreos/go-systemd/v22@latest
         - go mod tidy
         # Get the test suite
         - mkdir -p $(go env GOPATH)/src/github.com/hlandau
@@ -141,7 +139,6 @@ task:
       fetch_script:
         - cd $(go env GOPATH)/src/github.com/"$CIRRUS_REPO_FULL_NAME"
         - go mod init github.com/"$CIRRUS_REPO_FULL_NAME"
-        - go mod edit -replace github.com/coreos/go-systemd=github.com/coreos/go-systemd/v22@latest
         - go mod tidy
   build_script:
     - rm -rf idist
