@@ -124,7 +124,7 @@ task:
     - dpkg --add-architecture ppc64el
     - apt-get update
     - apt-get install -y gcc-multilib libcap-dev libc6-dev:i386 libcap-dev:i386 libc6-dev:armhf libcap-dev:armhf libc6-dev:arm64 libcap-dev:arm64 libc6-dev:ppc64el libcap-dev:ppc64el
-    - go get github.com/mitchellh/gox
+    - go install github.com/mitchellh/gox@latest
   path_script:
     - source testdata/move_to_gopath.bash
   matrix:
