@@ -23,14 +23,19 @@ task:
     - env:
         GOLANGCI_MODULES_ARGS: ""
         MODULES_NAME: ""
+      systemd_script:
+        - mkdir -p $(go env GOPATH)/src/github.com/coreos
+        - cd $(go env GOPATH)/src/github.com/coreos
+        - git clone https://github.com/coreos/go-systemd.git
       fetch_script:
         - cd $(go env GOPATH)/src/github.com/"$CIRRUS_REPO_FULL_NAME"
         - go mod init github.com/"$CIRRUS_REPO_FULL_NAME"
-        - go mod edit -replace github.com/coreos/go-systemd=github.com/coreos/go-systemd/v22@latest
+        - go mod edit -replace github.com/coreos/go-systemd=$(go env GOPATH)/src/github.com/coreos/go-systemd
         - go mod tidy
   lint_script:
     - cd $(go env GOPATH)/src/github.com/$CIRRUS_REPO_FULL_NAME/
-    - golangci-lint run --enable-all --disable gochecknoglobals,gomnd,interfacer $GOLANGCI_ARGS $GOLANGCI_MODULES_ARGS -v --timeout 5m --out-format json > $CIRRUS_WORKING_DIR/lint-report.json
+    # exhaustruct is specialized and doesn't make sense for us.
+    - golangci-lint run --enable-all --disable exhaustruct,gochecknoglobals,gomnd,interfacer $GOLANGCI_ARGS $GOLANGCI_MODULES_ARGS -v --timeout 5m --out-format json > $CIRRUS_WORKING_DIR/lint-report.json
   matrix:
     - name: "Go Lint $GOOS New$MODULES_NAME"
       env:
@@ -93,10 +98,14 @@ task:
         - go get -tags "$GOX_TAGS" -d -v -t github.com/$CIRRUS_REPO_FULL_NAME/...
     - env:
         MODULES_NAME: ""
+      systemd_script:
+        - mkdir -p $(go env GOPATH)/src/github.com/coreos
+        - cd $(go env GOPATH)/src/github.com/coreos
+        - git clone https://github.com/coreos/go-systemd.git
       fetch_script:
         - cd $(go env GOPATH)/src/github.com/"$CIRRUS_REPO_FULL_NAME"
         - go mod init github.com/"$CIRRUS_REPO_FULL_NAME"
-        - go mod edit -replace github.com/coreos/go-systemd=github.com/coreos/go-systemd/v22@latest
+        - go mod edit -replace github.com/coreos/go-systemd=$(go env GOPATH)/src/github.com/coreos/go-systemd
         - go mod tidy
         # Get the test suite
         - mkdir -p $(go env GOPATH)/src/github.com/hlandau
@@ -125,23 +134,30 @@ task:
     - dpkg --add-architecture ppc64el
     - apt-get update
     - apt-get install -y gcc-multilib libcap-dev libc6-dev:i386 libcap-dev:i386 libc6-dev:armhf libcap-dev:armhf libc6-dev:arm64 libcap-dev:arm64 libc6-dev:ppc64el libcap-dev:ppc64el
-    - go get github.com/mitchellh/gox
   path_script:
     - source testdata/move_to_gopath.bash
   matrix:
     - env:
         GO111MODULE: "off"
         MODULES_NAME: " Modules Off"
+      gox_script:
+        - go get github.com/mitchellh/gox
       fetch_script:
         - go get -tags "$GOX_TAGS" -d -v -t github.com/$CIRRUS_REPO_FULL_NAME/...
         - GOOS=windows go get -tags "$GOX_TAGS" -d -v -t github.com/$CIRRUS_REPO_FULL_NAME/...
         - go get -tags "$GOX_TAGS" -d -v -t github.com/$CIRRUS_REPO_FULL_NAME/...
     - env:
         MODULES_NAME: ""
+      gox_script:
+        - go install github.com/mitchellh/gox@latest
+      systemd_script:
+        - mkdir -p $(go env GOPATH)/src/github.com/coreos
+        - cd $(go env GOPATH)/src/github.com/coreos
+        - git clone https://github.com/coreos/go-systemd.git
       fetch_script:
         - cd $(go env GOPATH)/src/github.com/"$CIRRUS_REPO_FULL_NAME"
         - go mod init github.com/"$CIRRUS_REPO_FULL_NAME"
-        - go mod edit -replace github.com/coreos/go-systemd=github.com/coreos/go-systemd/v22@latest
+        - go mod edit -replace github.com/coreos/go-systemd=$(go env GOPATH)/src/github.com/coreos/go-systemd
         - go mod tidy
   build_script:
     - rm -rf idist
